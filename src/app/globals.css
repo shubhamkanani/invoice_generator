@@ -1,0 +1,216 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* The app is light-only ("Private Bank"). Keep `dark:` utilities that ship
+   inside the shadcn components inert: they only apply under a `.dark` ancestor,
+   which this app never renders. */
+@custom-variant dark (&:is(.dark *));
+
+/* ==========================================================================
+   Design tokens
+
+   Palette (hex, so it matches the brand sheet exactly):
+     paper #F4F1EA   panel #FFFDF8   sheet #FFFFFF   ink #1C2B24
+     forest #1F3D2F  brass #A9844A (decorative)   brass-ink #7D5F2E (brass text)
+     muted text #5F6B63   hairline #E3DCCB   error brick #9B2C2C
+   Text pairings below were checked against WCAG AA (4.5:1); `--input` is the
+   one border colour that is intentionally darker than the hairline so form
+   fields keep a 3:1 boundary.
+   ========================================================================== */
+:root {
+  /* Surfaces and text */
+  --background: #f4f1ea; /* paper: page background */
+  --foreground: #1c2b24; /* ink: body text */
+  --card: #fffdf8; /* panel: editor panels, dialogs, menus */
+  --card-foreground: #1c2b24;
+  --popover: #fffdf8;
+  --popover-foreground: #1c2b24;
+  --sheet: #ffffff; /* the printed/rendered invoice itself */
+
+  /* Brand */
+  --primary: #1f3d2f; /* forest */
+  --primary-foreground: #f4f1ea;
+  --brass: #a9844a; /* decorative only: rules, dots, borders */
+  --brass-ink: #7d5f2e; /* brass as text (5.2:1 on paper) */
+  --brass-soft: #c9b48a; /* brass text on forest (5.9:1) */
+
+  /* Neutral helpers */
+  --secondary: #ede8db;
+  --secondary-foreground: #1c2b24;
+  --muted: #ede8db;
+  --muted-foreground: #5f6b63; /* 4.9:1 on paper, 4.55:1 on --muted */
+  --accent: #e9e3d4; /* hover / focus surface in menus and ghost buttons */
+  --accent-foreground: #1c2b24;
+
+  /* Feedback */
+  --destructive: #9b2c2c; /* brick */
+
+  /* Lines and focus */
+  --border: #e3dccb; /* hairline: decorative dividers and panel edges */
+  --input: #8f8671; /* form-field edge, 3.2:1+ on every surface */
+  --ring: #1f3d2f; /* focus ring: forest */
+
+  --radius: 0.375rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-sheet: var(--sheet);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-brass: var(--brass);
+  --color-brass-ink: var(--brass-ink);
+  --color-brass-soft: var(--brass-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Geist comes from next/font in layout.tsx (--font-geist). --font-heading is
+     what shadcn dialog titles use. */
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+  --font-heading: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+
+  /* Small radii: panels 4-5px, pills are rounded-full */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Minimal depth: the sheet reads as paper, floating layers get one soft shadow */
+  --shadow-sheet: 0 18px 40px -24px rgb(31 61 47 / 0.45);
+  --shadow-pop: 0 16px 40px -22px rgb(31 61 47 / 0.5);
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans;
+    color-scheme: light;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--brass) 38%, transparent);
+    color: var(--foreground);
+  }
+
+  /* Buttons are not clickable-looking by default in Tailwind v4 */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary {
+    cursor: pointer;
+  }
+
+  /* Safety net: any focusable element without its own focus styles (plain links,
+     native selects, summaries) still gets the forest focus ring. The shadcn
+     components opt out with `outline-hidden` and draw their own ring instead. */
+  :where(
+    a[href],
+    button,
+    input,
+    select,
+    textarea,
+    summary,
+    [tabindex]:not([tabindex="-1"])
+  ):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Browser autofill would otherwise paint fields blue/yellow on the cream panels */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--foreground);
+    box-shadow: 0 0 0 1000px var(--card) inset;
+    transition: background-color 9999s ease-out;
+  }
+}
+
+/* Display type: page titles, the business name and amounts. Semibold with
+   tight tracking so large figures read crisp. */
+@utility font-display {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+}
+
+/* Small uppercase caption used for field labels, table headings and totals.
+   Colour is applied separately (brass-ink for labels, muted for table heads). */
+@utility eyebrow {
+  font-size: 0.6875rem;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Respect the OS "reduce motion" setting: animations resolve instantly. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   Print: US Letter, white page, the invoice sheet keeps its colours.
+   Page-level chrome is hidden by the editor with `print:hidden` utilities.
+   ========================================================================== */
+@page {
+  size: letter;
+  margin: 0.5in;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff;
+  }
+
+  .invoice-sheet {
+    box-shadow: none;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* The preview prints even when a phone is showing the Edit view. */
+  .print-show {
+    display: block !important;
+  }
+
+  /* Toasts never print. */
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+}
